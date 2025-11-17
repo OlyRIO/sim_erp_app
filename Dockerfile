@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1 \
     FLASK_RUN_HOST=0.0.0.0 \
     FLASK_RUN_PORT=8000
 
-COPY requirements.txt .
+COPY requirements.txt .a
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
