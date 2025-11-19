@@ -1,10 +1,8 @@
-services:
-  # PostgreSQL Database
-  - type: pserv
-    name: sim-erp-db
-    env: docker
+databases:
+  - name: sim-erp-db
     plan: free
 
+services:
   # Web Service
   - type: web
     name: sim-erp-app
