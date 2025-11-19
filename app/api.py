@@ -17,47 +17,31 @@ def webhook():
     POST: Incoming chatbot messages/events
     """
     if request.method == "GET":
-        # Webhook verification for platforms like Facebook, WhatsApp, etc.
+        # Webhook verification for Chatbot.com and other platforms
         verify_token = os.getenv("WEBHOOK_VERIFY_TOKEN", "test123")
         
-        # Try different parameter formats
-        # Format 1: hub.mode, hub.verify_token, hub.challenge (Facebook/Meta)
-        mode = request.args.get("hub.mode")
-        token = request.args.get("hub.verify_token")
-        challenge = request.args.get("hub.challenge")
-        
-        # Format 2: mode, verify_token, challenge (generic)
-        if not mode:
-            mode = request.args.get("mode")
-        if not token:
-            token = request.args.get("verify_token") or request.args.get("token")
-        if not challenge:
-            challenge = request.args.get("challenge")
-        
-        # Log for debugging (remove in production)
-        print(f"Webhook verification attempt: mode={mode}, token_match={token == verify_token}, challenge={challenge}")
-        
-        # Verify token and mode
-        if mode == "subscribe" and token == verify_token:
-            # Respond with the challenge token
-            return challenge, 200
-        else:
-            # Token mismatch or invalid mode
-            return jsonify({
-                "error": "Verification failed",
-                "received_token": token,
-                "expected_token": verify_token,
-                "mode": mode
-            }), 403
+        # Chatbot.com validation: responds to any GET request with 200 OK
+        # They validate by checking if the endpoint responds, not with a challenge
+        # Just return 200 OK for Chatbot.com
+        return "OK", 200
     
     elif request.method == "POST":
-        # Handle incoming webhook events (messages, etc.)
-        # You can process chatbot messages here
+        # Handle incoming webhook events from Chatbot.com
         data = request.get_json()
         
-        # Log or process the incoming data
-        # For now, just acknowledge receipt
-        return jsonify({"status": "received"}), 200
+        # Chatbot.com sends events in this format:
+        # {
+        #   "event": "message",
+        #   "user_id": "...",
+        #   "message": {...},
+        #   ...
+        # }
+        
+        # Log incoming data for debugging
+        print(f"Webhook POST received: {data}")
+        
+        # Acknowledge receipt
+        return jsonify({"status": "ok"}), 200
 
 
 @api_bp.route("/customers/<int:customer_id>/sims", methods=["GET"])
