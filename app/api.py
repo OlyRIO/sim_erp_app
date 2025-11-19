@@ -1,4 +1,5 @@
 """API endpoints for chatbot and external integrations."""
+import os
 from flask import Blueprint, jsonify, request
 from sqlalchemy.orm import joinedload
 
@@ -6,6 +7,40 @@ from .extensions import db
 from .models import Assignment, Customer, Sim
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
+
+
+@api_bp.route("/webhook", methods=["GET", "POST"])
+def webhook():
+    """Webhook endpoint for chatbot verification and message handling.
+    
+    GET: Webhook verification (challenge-response)
+    POST: Incoming chatbot messages/events
+    """
+    if request.method == "GET":
+        # Webhook verification for platforms like Facebook, WhatsApp, etc.
+        verify_token = os.getenv("WEBHOOK_VERIFY_TOKEN", "default_verify_token")
+        
+        # Check query parameters
+        mode = request.args.get("hub.mode")
+        token = request.args.get("hub.verify_token")
+        challenge = request.args.get("hub.challenge")
+        
+        # Verify token and mode
+        if mode == "subscribe" and token == verify_token:
+            # Respond with the challenge token
+            return challenge, 200
+        else:
+            # Token mismatch or invalid mode
+            return jsonify({"error": "Verification failed"}), 403
+    
+    elif request.method == "POST":
+        # Handle incoming webhook events (messages, etc.)
+        # You can process chatbot messages here
+        data = request.get_json()
+        
+        # Log or process the incoming data
+        # For now, just acknowledge receipt
+        return jsonify({"status": "received"}), 200
 
 
 @api_bp.route("/customers/<int:customer_id>/sims", methods=["GET"])

@@ -19,4 +19,6 @@ services:
         value: false
       - key: FLASK_ENV
         value: production
+      - key: WEBHOOK_VERIFY_TOKEN
+        generateValue: true
     healthCheckPath: /
