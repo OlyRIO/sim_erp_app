@@ -43,6 +43,83 @@ def webhook():
         return jsonify({"status": "ok"}), 200
 
 
+@api_bp.route("/my/sims", methods=["GET"])
+def get_my_sims():
+    """Get SIM cards for the authenticated user (via header).
+    
+    Headers:
+        - X-User-Email: Customer email address
+        - X-User-ID: Customer ID (alternative to email)
+    
+    Query params (optional):
+        - status: filter by SIM status
+        - carrier: filter by carrier name
+    
+    Returns:
+        JSON with customer info and list of assigned SIMs.
+    """
+    # Try to get user identifier from headers
+    user_email = request.headers.get("X-User-Email")
+    user_id = request.headers.get("X-User-ID")
+    
+    if not user_email and not user_id:
+        return jsonify({
+            "error": "Missing user identifier",
+            "message": "Provide X-User-Email or X-User-ID header"
+        }), 400
+    
+    # Find customer by email or ID
+    if user_email:
+        customer = db.session.query(Customer).filter(Customer.email == user_email).first()
+    else:
+        customer = db.session.get(Customer, int(user_id))
+    
+    if not customer:
+        return jsonify({"error": "Customer not found"}), 404
+    
+    # Build query with filters
+    query = (
+        db.session.query(Sim, Assignment)
+        .join(Assignment, Sim.id == Assignment.sim_id)
+        .filter(Assignment.customer_id == customer.id)
+    )
+    
+    # Optional filters
+    if status := request.args.get("status"):
+        query = query.filter(Sim.status == status)
+    
+    if carrier := request.args.get("carrier"):
+        query = query.filter(Sim.carrier.ilike(f"%{carrier}%"))
+    
+    results = query.all()
+    
+    sims_data = []
+    for sim, assignment in results:
+        sims_data.append({
+            "id": sim.id,
+            "iccid": sim.iccid,
+            "msisdn": sim.msisdn,
+            "carrier": sim.carrier,
+            "status": sim.status,
+            "created_at": sim.created_at.isoformat() if sim.created_at else None,
+            "assignment": {
+                "id": assignment.id,
+                "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                "note": assignment.note,
+            }
+        })
+    
+    return jsonify({
+        "customer": {
+            "id": customer.id,
+            "name": customer.name,
+            "email": customer.email,
+        },
+        "sims": sims_data,
+        "total": len(sims_data),
+    }), 200
+
+
 @api_bp.route("/customers/<int:customer_id>/sims", methods=["GET"])
 def get_customer_sims(customer_id: int):
     """Get all SIM cards assigned to a specific customer.
