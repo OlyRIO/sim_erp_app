@@ -6,7 +6,7 @@
 3. ~Create `app/extensions.py` with `db = SQLAlchemy()`~
 4. ~Create `app/models.py` with initial models (Customer, Sim, Assignment)~
 4a. ~Refactor models into `app/models/` package with separate files~
-5. Modify `app/__init__.py` to configure and initialize DB
-6. Rebuild and run containers to verify
-7. Initialize Alembic migrations
-8. Update README with DB instructions
+5. ~Modify `app/__init__.py` to configure and initialize DB~
+6. ~Rebuild and run containers to verify~
+7. ~Initialize Alembic migrations~
+8. ~Update README with DB instructions~

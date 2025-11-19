@@ -1,0 +1,8 @@
+Generic single-database configuration for Alembic.
+
+Commands you’ll commonly run (from repo root):
+- alembic revision --autogenerate -m "describe change"
+- alembic upgrade head
+- alembic downgrade -1
+
+Note: This project’s env.py reads DATABASE_URL from the environment. Ensure it is set or present via docker-compose env_file.

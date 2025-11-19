@@ -1,0 +1,25 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: sim-erp-db
+    plan: free
+    databaseName: sim_erp_db
+    databaseUser: sim_erp_user
+
+  # Web Service
+  - type: web
+    name: sim-erp-app
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sim-erp-db
+          property: connectionString
+      - key: SEED_ON_START
+        value: false
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /
