@@ -3,8 +3,6 @@ services:
   - type: pserv
     name: sim-erp-db
     plan: free
-    databaseName: sim_erp_db
-    databaseUser: sim_erp_user
 
   # Web Service
   - type: web
