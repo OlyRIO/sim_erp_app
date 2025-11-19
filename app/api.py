@@ -17,15 +17,20 @@ def webhook():
     POST: Incoming chatbot messages/events
     """
     if request.method == "GET":
-        # Chatbot.com sends a challenge parameter that must be echoed back
+        # Chatbot.com verification format:
+        # - Sends ?token=YOUR_TOKEN&challenge=RANDOM_STRING
+        # - Must verify token matches, then return challenge
+        
+        verify_token = os.getenv("WEBHOOK_VERIFY_TOKEN", "test123")
+        token = request.args.get("token")
         challenge = request.args.get("challenge")
         
-        if challenge:
-            # Return the challenge value exactly as received
-            return challenge, 200, {"Content-Type": "text/plain"}
+        # Check if verification token is correct
+        if token != verify_token:
+            return "", 401
         
-        # Fallback for other validation methods
-        return "OK", 200
+        # Return challenge to Chatbot.com
+        return challenge, 200, {"Content-Type": "text/plain"}
     
     elif request.method == "POST":
         # Handle incoming webhook events from Chatbot.com
