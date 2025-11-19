@@ -18,12 +18,24 @@ def webhook():
     """
     if request.method == "GET":
         # Webhook verification for platforms like Facebook, WhatsApp, etc.
-        verify_token = os.getenv("WEBHOOK_VERIFY_TOKEN", "default_verify_token")
+        verify_token = os.getenv("WEBHOOK_VERIFY_TOKEN", "test123")
         
-        # Check query parameters
+        # Try different parameter formats
+        # Format 1: hub.mode, hub.verify_token, hub.challenge (Facebook/Meta)
         mode = request.args.get("hub.mode")
         token = request.args.get("hub.verify_token")
         challenge = request.args.get("hub.challenge")
+        
+        # Format 2: mode, verify_token, challenge (generic)
+        if not mode:
+            mode = request.args.get("mode")
+        if not token:
+            token = request.args.get("verify_token") or request.args.get("token")
+        if not challenge:
+            challenge = request.args.get("challenge")
+        
+        # Log for debugging (remove in production)
+        print(f"Webhook verification attempt: mode={mode}, token_match={token == verify_token}, challenge={challenge}")
         
         # Verify token and mode
         if mode == "subscribe" and token == verify_token:
@@ -31,7 +43,12 @@ def webhook():
             return challenge, 200
         else:
             # Token mismatch or invalid mode
-            return jsonify({"error": "Verification failed"}), 403
+            return jsonify({
+                "error": "Verification failed",
+                "received_token": token,
+                "expected_token": verify_token,
+                "mode": mode
+            }), 403
     
     elif request.method == "POST":
         # Handle incoming webhook events (messages, etc.)
