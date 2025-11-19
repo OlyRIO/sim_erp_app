@@ -2,12 +2,13 @@ services:
   # PostgreSQL Database
   - type: pserv
     name: sim-erp-db
+    env: docker
     plan: free
 
   # Web Service
   - type: web
     name: sim-erp-app
-    runtime: docker
+    env: docker
     plan: free
     branch: main
     dockerfilePath: ./Dockerfile
