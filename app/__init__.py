@@ -12,6 +12,9 @@ def create_app() -> Flask:
         "DATABASE_URL", "sqlite:///instance/dev.db"
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    
+    # Session configuration for chatbot
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
     db.init_app(app)
 

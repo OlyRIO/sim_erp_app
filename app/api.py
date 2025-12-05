@@ -1,10 +1,12 @@
 """API endpoints for chatbot and external integrations."""
 import os
+from datetime import datetime
 from flask import Blueprint, jsonify, request
 from sqlalchemy.orm import joinedload
 
 from .extensions import db
 from .models import Assignment, Customer, Sim
+from .chatbot_service import handle_user_message
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -309,3 +311,47 @@ def not_found(e):
 def internal_error(e):
     db.session.rollback()
     return jsonify({"error": "Internal server error"}), 500
+
+
+@api_bp.route("/chatbot/message", methods=["POST"])
+def chatbot_message():
+    """Handle chatbot messages.
+    
+    Request JSON:
+        {
+            "user_id": "unique_user_identifier",
+            "message": "user's message text"
+        }
+    
+    Response JSON:
+        {
+            "message": "bot's response",
+            "timestamp": "ISO timestamp"
+        }
+    """
+    data = request.get_json()
+    
+    if not data or 'user_id' not in data or 'message' not in data:
+        return jsonify({
+            "error": "Missing required fields",
+            "message": "Request must include 'user_id' and 'message'"
+        }), 400
+    
+    user_id = str(data['user_id'])
+    user_message = str(data['message'])
+    
+    try:
+        response = handle_user_message(user_id, user_message)
+        
+        # Return full response including state
+        return jsonify({
+            "message": response.get('message', ''),
+            "state": response.get('state', 'initial'),
+            "timestamp": datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "error": "Processing error",
+            "message": str(e)
+        }), 500

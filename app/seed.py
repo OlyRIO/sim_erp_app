@@ -8,7 +8,8 @@ from typing import List, Tuple
 from faker import Faker
 
 from .extensions import db
-from .models import Assignment, Customer, Sim
+from .models import Assignment, Customer, Sim, SimType, Plan, BillingAccount, Bill, InvoiceItem
+from datetime import timedelta
 
 
 faker = Faker("hr_HR")
@@ -110,6 +111,148 @@ def _make_assignments(customers: List[Customer], sims: List[Sim]) -> List[Assign
     return assignments
 
 
+def _ensure_sim_types() -> None:
+    """Ensure the 3 SIM types exist in the database."""
+    try:
+        # Check if SIM types already exist
+        if db.session.query(SimType).first():
+            return
+        
+        sim_types = [
+            SimType(
+                name="PRP SIM",
+                description="Standard prepaid SIM card",
+                price=2.85
+            ),
+            SimType(
+                name="PRP Internet SIM",
+                description="Prepaid internet-only SIM card",
+                price=9.98
+            ),
+            SimType(
+                name="POP SIM",
+                description="Postpaid SIM card",
+                price=0.00
+            ),
+        ]
+        
+        db.session.add_all(sim_types)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _ensure_plans() -> None:
+    """Ensure the 3 plans exist in the database."""
+    try:
+        # Check if plans already exist
+        if db.session.query(Plan).first():
+            return
+        
+        plans = [
+            Plan(
+                name="Velika kombinacija",
+                description="Large combination plan",
+                monthly_price=13.50
+            ),
+            Plan(
+                name="Jako velika kombinacija",
+                description="Very large combination plan",
+                monthly_price=16.50
+            ),
+            Plan(
+                name="Jako Jako velika kombinacija",
+                description="Extra large combination plan",
+                monthly_price=19.50
+            ),
+        ]
+        
+        db.session.add_all(plans)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _ensure_sample_billing_data() -> None:
+    """Create sample billing data for testing."""
+    try:
+        # Check if billing accounts already exist
+        if db.session.query(BillingAccount).first():
+            return
+        
+        # Get first customer
+        customer = db.session.query(Customer).first()
+        if not customer:
+            return
+        
+        # Create a billing account
+        ba = BillingAccount(
+            account_number="BA12345",
+            customer_id=customer.id,
+            status="active"
+        )
+        db.session.add(ba)
+        db.session.flush()
+        
+        # Get plans
+        plans = db.session.query(Plan).all()
+        if not plans:
+            return
+        
+        # Create bills for last 3 months
+        from datetime import datetime, timedelta
+        
+        for i in range(3):
+            bill_date = datetime.utcnow() - timedelta(days=30 * i)
+            bill_month = bill_date.strftime('%Y-%m')
+            
+            # Create bill
+            bill = Bill(
+                billing_account_id=ba.id,
+                bill_month=bill_month,
+                total_amount=0,  # Will update after adding items
+                status='pending' if i < 2 else 'paid',
+                issue_date=bill_date,
+                due_date=bill_date + timedelta(days=15)
+            )
+            db.session.add(bill)
+            db.session.flush()
+            
+            # Add plan item
+            plan = random.choice(plans)
+            plan_item = InvoiceItem(
+                bill_id=bill.id,
+                item_type='plan',
+                plan_id=plan.id,
+                amount=plan.monthly_price
+            )
+            db.session.add(plan_item)
+            
+            # Add some extra costs (randomly)
+            total = float(plan.monthly_price)
+            if random.random() > 0.5:
+                extra_types = ['SMS Parking', '3rd Party Expense', 'Miscellaneous']
+                extra_type = random.choice(extra_types)
+                extra_amount = round(random.uniform(2, 15), 2)
+                
+                extra_item = InvoiceItem(
+                    bill_id=bill.id,
+                    item_type='extra_cost',
+                    extra_cost_type=extra_type,
+                    description=f"Additional charges for {extra_type.lower()}",
+                    amount=extra_amount
+                )
+                db.session.add(extra_item)
+                total += extra_amount
+            
+            # Update bill total
+            bill.total_amount = total
+        
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
 def ensure_seed_data() -> None:
     """Populate the database with dummy data if empty.
 
@@ -117,7 +260,13 @@ def ensure_seed_data() -> None:
     Safe: if tables are missing (migrations not applied), it will no-op.
     """
     try:
+        # Always ensure SIM types and plans are present
+        _ensure_sim_types()
+        _ensure_plans()
+        
         if db.session.query(Customer).first():
+            # If customers exist, just ensure billing data
+            _ensure_sample_billing_data()
             return
 
         customers = _make_customers(5)
@@ -128,6 +277,9 @@ def ensure_seed_data() -> None:
         db.session.add_all(sims)
         db.session.add_all(assignments)
         db.session.commit()
+        
+        # Create sample billing data
+        _ensure_sample_billing_data()
     except Exception:
         db.session.rollback()
         return
