@@ -11,6 +11,7 @@ class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False, index=True)
     email = db.Column(db.String(255), unique=True, nullable=True)
+    oib = db.Column(db.String(11), unique=True, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     assignments = db.relationship("Assignment", back_populates="customer", cascade="all, delete-orphan")

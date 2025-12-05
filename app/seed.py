@@ -15,6 +15,33 @@ from datetime import timedelta
 faker = Faker("hr_HR")
 
 
+def _generate_valid_oib(base: str = None) -> str:
+    """Generate a valid Croatian OIB using ISO 7064, MOD 11-10 algorithm.
+    
+    Args:
+        base: Optional 10-digit base. If None, generates random base.
+    
+    Returns:
+        Valid 11-digit OIB string
+    """
+    if base is None:
+        base = ''.join([str(random.randint(0, 9)) for _ in range(10)])
+    elif len(base) != 10 or not base.isdigit():
+        raise ValueError("Base must be exactly 10 digits")
+    
+    # Calculate check digit using ISO 7064, MOD 11-10
+    a = 10
+    for digit in base:
+        a = a + int(digit)
+        a = a % 10
+        if a == 0:
+            a = 10
+        a = (a * 2) % 11
+    
+    check_digit = (11 - a) % 10
+    return base + str(check_digit)
+
+
 def _luhn_checksum(number: str) -> int:
     total = 0
     reverse_digits = list(map(int, number[::-1]))
@@ -63,6 +90,7 @@ def _make_customers(n: int = 5) -> List[Customer]:
             Customer(
                 name=faker.name(),
                 email=faker.free_email(),
+                oib=_generate_valid_oib(),
                 created_at=datetime.utcnow(),
             )
         )
@@ -187,7 +215,7 @@ def _ensure_sample_billing_data() -> None:
         
         # Create a billing account
         ba = BillingAccount(
-            account_number="BA12345",
+            account_number="9001242277",
             customer_id=customer.id,
             status="active"
         )

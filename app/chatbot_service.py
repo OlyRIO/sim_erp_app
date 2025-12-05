@@ -301,7 +301,7 @@ def handle_open_bills_request() -> Dict[str, Any]:
     return {
         'message': """**View Open Bills**
 
-Please provide your Billing Account number (e.g., `BA12345`)""",
+Please provide your Billing Account number (e.g., `9001242277`)""",
         'state': 'awaiting_ba_for_bills'
     }
 
@@ -311,14 +311,104 @@ def handle_last_bill_request() -> Dict[str, Any]:
     return {
         'message': """**View Last Open Bill**
 
-Please provide your Billing Account number (e.g., `BA12345`)""",
+Please provide your Billing Account number (e.g., `9001242277`)""",
         'state': 'awaiting_ba_for_last_bill'
     }
+
+
+def validate_ba_number(ba_number: str) -> tuple[bool, Optional[str]]:
+    """Validate billing account number format.
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    ba_number = ba_number.strip()
+    
+    # Check if it's exactly 10 digits
+    if not ba_number.isdigit():
+        return False, "❌ Billing Account number must contain only digits."
+    
+    if len(ba_number) != 10:
+        return False, f"❌ Billing Account number must be exactly 10 digits. You provided {len(ba_number)}."
+    
+    # Check if it starts with 900
+    if not ba_number.startswith('900'):
+        return False, "❌ Billing Account number must start with 900."
+    
+    return True, None
+
+
+def validate_oib(oib: str) -> tuple[bool, Optional[str]]:
+    """Validate Croatian OIB (Osobni Identifikacijski Broj) using ISO 7064, MOD 11-10.
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    oib = oib.strip()
+    
+    # Check if it's exactly 11 digits
+    if not oib.isdigit():
+        return False, "❌ OIB must contain only digits."
+    
+    if len(oib) != 11:
+        return False, f"❌ OIB must be exactly 11 digits. You provided {len(oib)}."
+    
+    # Validate check digit using ISO 7064, MOD 11-10 algorithm
+    a = 10
+    for i in range(10):
+        a = a + int(oib[i])
+        a = a % 10
+        if a == 0:
+            a = 10
+        a = (a * 2) % 11
+    
+    check_digit = (11 - a) % 10
+    if check_digit != int(oib[10]):
+        return False, "❌ Invalid OIB check digit. Please verify the number."
+    
+    return True, None
+
+
+def generate_valid_oib(base: str = None) -> str:
+    """Generate a valid Croatian OIB.
+    
+    Args:
+        base: Optional 10-digit base. If None, generates random base.
+    
+    Returns:
+        Valid 11-digit OIB string
+    """
+    import random
+    
+    if base is None:
+        base = ''.join([str(random.randint(0, 9)) for _ in range(10)])
+    elif len(base) != 10 or not base.isdigit():
+        raise ValueError("Base must be exactly 10 digits")
+    
+    # Calculate check digit
+    a = 10
+    for digit in base:
+        a = a + int(digit)
+        a = a % 10
+        if a == 0:
+            a = 10
+        a = (a * 2) % 11
+    
+    check_digit = (11 - a) % 10
+    return base + str(check_digit)
 
 
 def fetch_open_bills(ba_number: str) -> Dict[str, Any]:
     """Fetch and display all open bills for a billing account."""
     ba_number = ba_number.strip()
+    
+    # Validate BA number format
+    is_valid, error_msg = validate_ba_number(ba_number)
+    if not is_valid:
+        return {
+            'message': error_msg,
+            'state': 'awaiting_ba_for_bills'
+        }
     
     # Find billing account
     billing_account = db.session.query(BillingAccount).filter(
@@ -378,6 +468,14 @@ You have no open bills at this time.""",
 def fetch_last_open_bill(ba_number: str) -> Dict[str, Any]:
     """Fetch and display the most recent open bill for a billing account."""
     ba_number = ba_number.strip()
+    
+    # Validate BA number format
+    is_valid, error_msg = validate_ba_number(ba_number)
+    if not is_valid:
+        return {
+            'message': error_msg,
+            'state': 'awaiting_ba_for_last_bill'
+        }
     
     # Find billing account
     billing_account = db.session.query(BillingAccount).filter(
