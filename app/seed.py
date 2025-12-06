@@ -297,27 +297,16 @@ def ensure_seed_data() -> None:
             _ensure_sample_billing_data()
             return
 
-        # Create 1000 customers, 1000 SIMs, and 1000 assignments (1:1 mapping)
-        # Use batching to avoid memory/timeout issues
-        batch_size = 100
-        all_customers = []
-        all_sims = []
-        
-        for i in range(0, 1000, batch_size):
-            customers = _make_customers(batch_size)
-            sims = _make_sims(batch_size)
-            
-            db.session.add_all(customers)
-            db.session.add_all(sims)
-            db.session.flush()  # Get IDs without committing
-            
-            # Create assignments for this batch
-            assignments = _make_assignments(customers, sims)
-            db.session.add_all(assignments)
-            db.session.commit()
-            
-            all_customers.extend(customers)
-            all_sims.extend(sims)
+        # Create small initial dataset for startup (50 each)
+        # Use CLI command for bulk seeding: flask seed --customers 1000 --sims 1000
+        customers = _make_customers(50)
+        sims = _make_sims(50)
+        assignments = _make_assignments(customers, sims)
+
+        db.session.add_all(customers)
+        db.session.add_all(sims)
+        db.session.add_all(assignments)
+        db.session.commit()
         
         # Create sample billing data
         _ensure_sample_billing_data()
