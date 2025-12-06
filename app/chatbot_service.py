@@ -78,9 +78,15 @@ def get_sim_types() -> Dict[str, Any]:
                 response += f"   {sim_type.description}\n"
             response += f"   Price: {price_str}\n\n"
         
+        # Append main menu
+        response += "\n\n---\n\n**What can I help you with?**\n\n"
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
+        
         return {
             'message': response.strip(),
-            'state': 'initial',
+            'state': 'awaiting_option',
             'reset': True
         }
     except Exception as e:
@@ -96,7 +102,7 @@ def handle_update_request() -> Dict[str, Any]:
     return {
         'message': """**Update Personal Information**
 
-Please provide your OIB (11-digit identification number):""",
+Please provide your OIB (11-digit identification number), or send 0 to return to the main menu:""",
         'state': 'awaiting_oib_for_update'
     }
 
@@ -108,7 +114,7 @@ def verify_oib_and_prompt_field(oib: str) -> Dict[str, Any]:
     # Validate OIB format (11 digits)
     if not oib.isdigit() or len(oib) != 11:
         return {
-            'message': '❌ Invalid OIB format. Please provide an 11-digit OIB number.',
+            'message': '❌ Invalid OIB format. Please provide an 11-digit OIB number, or send 0 to return to the main menu.',
             'state': 'awaiting_oib_for_update'
         }
     
@@ -116,9 +122,17 @@ def verify_oib_and_prompt_field(oib: str) -> Dict[str, Any]:
         customer = db.session.query(Customer).filter(Customer.oib == oib).first()
         
         if not customer:
+            response = f"""❌ No customer found with OIB: {oib}
+
+---
+
+**What can I help you with?**\n\n"""
+            for num, desc in OPTIONS.items():
+                response += f"{num}. {desc}\n"
+            response += "\nReply with a number (1-5) to select an option."
             return {
-                'message': f'❌ No customer found with OIB: {oib}',
-                'state': 'initial',
+                'message': response,
+                'state': 'awaiting_option',
                 'reset': True
             }
         
@@ -132,14 +146,22 @@ What would you like to update?
 1. Name
 2. Email
 
-Reply with 1 or 2:""",
+Reply with 1 or 2, or send 0 to return to the main menu:""",
             'state': 'awaiting_field_selection',
             'context': {'customer_id': customer.id, 'oib': oib}
         }
     except Exception as e:
+        response = f"""❌ Database error: {str(e)}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
         return {
-            'message': f'❌ Database error: {str(e)}',
-            'state': 'initial',
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
 
@@ -150,19 +172,19 @@ def handle_field_selection(message: str, context: Dict[str, Any]) -> Dict[str, A
     
     if choice == '1':
         return {
-            'message': 'Please enter your new **name**:',
+            'message': 'Please enter your new **name**, or send 0 to return to the main menu:',
             'state': 'awaiting_name_update',
             'context': context
         }
     elif choice == '2':
         return {
-            'message': 'Please enter your new **email address**:',
+            'message': 'Please enter your new **email address**, or send 0 to return to the main menu:',
             'state': 'awaiting_email_update',
             'context': context
         }
     else:
         return {
-            'message': '❌ Invalid choice. Please reply with 1 (Name) or 2 (Email):',
+            'message': '❌ Invalid choice. Please reply with 1 (Name) or 2 (Email), or send 0 to return to the main menu:',
             'state': 'awaiting_field_selection',
             'context': context
         }
@@ -174,9 +196,17 @@ def update_customer_name(customer_id: int, new_name: str) -> Dict[str, Any]:
         customer = db.session.get(Customer, customer_id)
         
         if not customer:
+            response = """❌ Customer not found.
+
+---
+
+**What can I help you with?**\n\n"""
+            for num, desc in OPTIONS.items():
+                response += f"{num}. {desc}\n"
+            response += "\nReply with a number (1-5) to select an option."
             return {
-                'message': '❌ Customer not found.',
-                'state': 'initial',
+                'message': response,
+                'state': 'awaiting_option',
                 'reset': True
             }
         
@@ -184,19 +214,36 @@ def update_customer_name(customer_id: int, new_name: str) -> Dict[str, Any]:
         customer.name = new_name.strip()
         db.session.commit()
         
-        return {
-            'message': f"""✅ **Name Updated Successfully!**
+        response = f"""✅ **Name Updated Successfully!**
 
 **Old Name:** {old_name}
-**New Name:** {customer.name}""",
-            'state': 'initial',
+**New Name:** {customer.name}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
+        
+        return {
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     except Exception as e:
         db.session.rollback()
+        response = f"""❌ Database error: {str(e)}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
         return {
-            'message': f'❌ Database error: {str(e)}',
-            'state': 'initial',
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
 
@@ -207,9 +254,17 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         customer = db.session.get(Customer, customer_id)
         
         if not customer:
+            response = """❌ Customer not found.
+
+---
+
+**What can I help you with?**\n\n"""
+            for num, desc in OPTIONS.items():
+                response += f"{num}. {desc}\n"
+            response += "\nReply with a number (1-5) to select an option."
             return {
-                'message': '❌ Customer not found.',
-                'state': 'initial',
+                'message': response,
+                'state': 'awaiting_option',
                 'reset': True
             }
         
@@ -220,9 +275,17 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         ).first()
         
         if existing:
+            response = f"""❌ Email {new_email} is already in use by another customer.
+
+---
+
+**What can I help you with?**\n\n"""
+            for num, desc in OPTIONS.items():
+                response += f"{num}. {desc}\n"
+            response += "\nReply with a number (1-5) to select an option."
             return {
-                'message': f'❌ Email {new_email} is already in use by another customer.',
-                'state': 'initial',
+                'message': response,
+                'state': 'awaiting_option',
                 'reset': True
             }
         
@@ -230,31 +293,50 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         customer.email = new_email.strip()
         db.session.commit()
         
-        return {
-            'message': f"""✅ **Email Updated Successfully!**
+        response = f"""✅ **Email Updated Successfully!**
 
 **Old Email:** {old_email or 'N/A'}
-**New Email:** {customer.email}""",
-            'state': 'initial',
+**New Email:** {customer.email}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
+        
+        return {
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     except Exception as e:
         db.session.rollback()
+        response = f"""❌ Database error: {str(e)}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
         return {
-            'message': f'❌ Database error: {str(e)}',
-            'state': 'initial',
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
 
 
 def handle_fetch_request() -> Dict[str, Any]:
-    """Handle option 5 - request identifier for user info fetch."""
+    """Handle option 3 - request identifier for user info fetch."""
     return {
         'message': """**Retrieve User Information**
 
 Please provide either:
 • Customer ID (e.g., `123`)
-• Email address (e.g., `user@example.com`)""",
+• Email address (e.g., `user@example.com`)
+
+Or send 0 to return to the main menu.""",
         'state': 'awaiting_identifier'
     }
 
@@ -275,9 +357,17 @@ def fetch_user_info(message: str) -> Dict[str, Any]:
         customer = db.session.query(Customer).filter(Customer.email == identifier).first()
     
     if not customer:
+        response = f"""❌ No customer found with identifier: {identifier}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
         return {
-            'message': f'❌ No customer found with identifier: {identifier}',
-            'state': 'initial',
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     
@@ -306,29 +396,35 @@ def fetch_user_info(message: str) -> Dict[str, Any]:
         if len(assignments) > 5:
             response += f"\n\n... and {len(assignments) - 5} more SIM(s)"
     
+    # Append main menu
+    response += "\n\n---\n\n**What can I help you with?**\n\n"
+    for num, desc in OPTIONS.items():
+        response += f"{num}. {desc}\n"
+    response += "\nReply with a number (1-5) to select an option."
+    
     return {
         'message': response,
-        'state': 'initial',
+        'state': 'awaiting_option',
         'reset': True
     }
 
 
 def handle_open_bills_request() -> Dict[str, Any]:
-    """Handle option 6 - request BA for open bills."""
+    """Handle option 4 - request BA for open bills."""
     return {
         'message': """**View Open Bills**
 
-Please provide your Billing Account number (e.g., `9001242277`)""",
+Please provide your Billing Account number (e.g., `9001242277`), or send 0 to return to the main menu:""",
         'state': 'awaiting_ba_for_bills'
     }
 
 
 def handle_last_bill_request() -> Dict[str, Any]:
-    """Handle option 7 - request BA for last open bill."""
+    """Handle option 5 - request BA for last open bill."""
     return {
         'message': """**View Last Open Bill**
 
-Please provide your Billing Account number (e.g., `9001242277`)""",
+Please provide your Billing Account number (e.g., `9001242277`), or send 0 to return to the main menu:""",
         'state': 'awaiting_ba_for_last_bill'
     }
 
@@ -423,7 +519,7 @@ def fetch_open_bills(ba_number: str) -> Dict[str, Any]:
     is_valid, error_msg = validate_ba_number(ba_number)
     if not is_valid:
         return {
-            'message': error_msg,
+            'message': error_msg + ' Or send 0 to return to the main menu.',
             'state': 'awaiting_ba_for_bills'
         }
     
@@ -433,9 +529,17 @@ def fetch_open_bills(ba_number: str) -> Dict[str, Any]:
     ).first()
     
     if not billing_account:
+        response = f"""❌ No billing account found with number: {ba_number}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
         return {
-            'message': f'❌ No billing account found with number: {ba_number}',
-            'state': 'initial',
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     
@@ -446,14 +550,22 @@ def fetch_open_bills(ba_number: str) -> Dict[str, Any]:
     ).order_by(Bill.bill_month.desc()).all()
     
     if not open_bills:
-        return {
-            'message': f"""✅ **No Open Bills**
+        response = f"""✅ **No Open Bills**
 
 **Billing Account:** {ba_number}
 **Customer:** {billing_account.customer.name}
 
-You have no open bills at this time.""",
-            'state': 'initial',
+You have no open bills at this time.
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
+        return {
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     
@@ -475,9 +587,15 @@ You have no open bills at this time.""",
             response += f"\n   Due: {bill.due_date.strftime('%Y-%m-%d')}"
         response += "\n"
     
+    # Append main menu
+    response += "\n---\n\n**What can I help you with?**\n\n"
+    for num, desc in OPTIONS.items():
+        response += f"{num}. {desc}\n"
+    response += "\nReply with a number (1-5) to select an option."
+    
     return {
         'message': response.strip(),
-        'state': 'initial',
+        'state': 'awaiting_option',
         'reset': True
     }
 
@@ -490,7 +608,7 @@ def fetch_last_open_bill(ba_number: str) -> Dict[str, Any]:
     is_valid, error_msg = validate_ba_number(ba_number)
     if not is_valid:
         return {
-            'message': error_msg,
+            'message': error_msg + ' Or send 0 to return to the main menu.',
             'state': 'awaiting_ba_for_last_bill'
         }
     
@@ -500,9 +618,17 @@ def fetch_last_open_bill(ba_number: str) -> Dict[str, Any]:
     ).first()
     
     if not billing_account:
+        response = f"""❌ No billing account found with number: {ba_number}
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
         return {
-            'message': f'❌ No billing account found with number: {ba_number}',
-            'state': 'initial',
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     
@@ -513,14 +639,22 @@ def fetch_last_open_bill(ba_number: str) -> Dict[str, Any]:
     ).order_by(Bill.bill_month.desc()).first()
     
     if not last_bill:
-        return {
-            'message': f"""✅ **No Open Bills**
+        response = f"""✅ **No Open Bills**
 
 **Billing Account:** {ba_number}
 **Customer:** {billing_account.customer.name}
 
-You have no open bills at this time.""",
-            'state': 'initial',
+You have no open bills at this time.
+
+---
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
+        return {
+            'message': response,
+            'state': 'awaiting_option',
             'reset': True
         }
     
@@ -555,9 +689,15 @@ You have no open bills at this time.""",
                     response += f" - {item.description}"
             response += f"\n   Amount: €{float(item.amount):.2f}\n"
     
+    # Append main menu
+    response += "\n---\n\n**What can I help you with?**\n\n"
+    for num, desc in OPTIONS.items():
+        response += f"{num}. {desc}\n"
+    response += "\nReply with a number (1-5) to select an option."
+    
     return {
         'message': response.strip(),
-        'state': 'initial',
+        'state': 'awaiting_option',
         'reset': True
     }
 
@@ -566,8 +706,8 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
     """Main message handler - routes to appropriate function based on state."""
     sess = get_or_create_session()
     
-    # Handle reset/restart commands
-    if message.lower() in ['restart', 'reset', 'start', 'menu']:
+    # Handle reset/restart commands and return to menu with 0
+    if message.lower() in ['restart', 'reset', 'start', 'menu'] or message.strip() == '0':
         clear_session()
         sess = get_or_create_session()
     
@@ -586,7 +726,7 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         
         if option is None:
             return {
-                'message': '❌ Invalid option. Please enter a valid number (1-5).',
+                'message': '❌ Invalid option. Please enter a valid number (1-5), or send 0 to return to the main menu.',
                 'state': 'awaiting_option'
             }
         
@@ -597,6 +737,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
             response = get_sim_types()
             if response.get('reset'):
                 clear_session()
+                sess = get_or_create_session()
+                sess['state'] = response['state']
+                session.modified = True
             return response
         
         elif option == 2:
@@ -635,6 +778,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         response = verify_oib_and_prompt_field(message)
         if response.get('reset'):
             clear_session()
+            sess = get_or_create_session()
+            sess['state'] = response['state']
+            session.modified = True
         else:
             sess['state'] = response['state']
             if 'context' in response:
@@ -647,6 +793,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         response = handle_field_selection(message, sess.get('context', {}))
         if response.get('reset'):
             clear_session()
+            sess = get_or_create_session()
+            sess['state'] = response['state']
+            session.modified = True
         else:
             sess['state'] = response['state']
             if 'context' in response:
@@ -661,6 +810,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
             response = update_customer_name(customer_id, message)
             if response.get('reset'):
                 clear_session()
+                sess = get_or_create_session()
+                sess['state'] = response['state']
+                session.modified = True
             else:
                 sess['state'] = response['state']
                 session.modified = True
@@ -676,6 +828,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
             response = update_customer_email(customer_id, message)
             if response.get('reset'):
                 clear_session()
+                sess = get_or_create_session()
+                sess['state'] = response['state']
+                session.modified = True
             else:
                 sess['state'] = response['state']
                 session.modified = True
@@ -689,6 +844,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         response = fetch_user_info(message)
         if response.get('reset'):
             clear_session()
+            sess = get_or_create_session()
+            sess['state'] = response['state']
+            session.modified = True
         else:
             sess['state'] = response['state']
             session.modified = True
@@ -699,6 +857,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         response = fetch_open_bills(message)
         if response.get('reset'):
             clear_session()
+            sess = get_or_create_session()
+            sess['state'] = response['state']
+            session.modified = True
         else:
             sess['state'] = response['state']
             session.modified = True
@@ -709,6 +870,9 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         response = fetch_last_open_bill(message)
         if response.get('reset'):
             clear_session()
+            sess = get_or_create_session()
+            sess['state'] = response['state']
+            session.modified = True
         else:
             sess['state'] = response['state']
             session.modified = True

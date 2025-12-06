@@ -400,6 +400,40 @@ def seed_bulk(num_customers: int = 50, num_sims: int = 50, num_assignments: int 
             target_sims -= len(new_sims)
             print(f"  Created {inserted_s} SIMs so far...")
 
+        # Always check and create billing accounts for customers that don't have one
+        all_customers = db.session.query(Customer).count()
+        print(f"Checking billing accounts for {all_customers} customers...")
+        customers_without_ba = db.session.query(Customer).filter(
+            ~Customer.id.in_(
+                db.session.query(BillingAccount.customer_id)
+            )
+        ).all()
+        
+        print(f"Found {len(customers_without_ba)} customers without billing accounts")
+        
+        if customers_without_ba:
+            billing_accounts = []
+            # Get existing BA numbers to ensure uniqueness
+            existing_ba_numbers = set(row[0] for row in db.session.query(BillingAccount.account_number).all())
+            
+            for customer in customers_without_ba:
+                # Generate unique BA number starting with 900
+                ba_number = f"900{random.randint(1000000, 9999999)}"
+                # Ensure uniqueness
+                while ba_number in existing_ba_numbers:
+                    ba_number = f"900{random.randint(1000000, 9999999)}"
+                existing_ba_numbers.add(ba_number)
+                
+                billing_accounts.append(BillingAccount(
+                    account_number=ba_number,
+                    customer_id=customer.id,
+                    status="active"
+                ))
+            
+            db.session.add_all(billing_accounts)
+            db.session.commit()
+            print(f"  Created {len(billing_accounts)} billing accounts")
+
         # Assignments: avoid duplicates per uq_customer_sim
         # We'll create up to num_assignments unique pairs
         total_customers = db.session.query(Customer).count()

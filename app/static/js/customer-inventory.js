@@ -54,7 +54,7 @@
             console.error('Error fetching customers:', error);
             tableBody.innerHTML = `
                 <tr class="error-row">
-                    <td colspan="5" class="error-cell">Failed to load customer data. Please try again.</td>
+                    <td colspan="6" class="error-cell">Failed to load customer data. Please try again.</td>
                 </tr>
             `;
         }
@@ -65,7 +65,7 @@
         if (!customers || customers.length === 0) {
             tableBody.innerHTML = `
                 <tr class="empty-row">
-                    <td colspan="5" class="empty-cell">No customers found matching your filters.</td>
+                    <td colspan="6" class="empty-cell">No customers found matching your filters.</td>
                 </tr>
             `;
             return;
@@ -76,6 +76,7 @@
                 <td class="name-cell"><strong>${escapeHtml(customer.name)}</strong></td>
                 <td class="email-cell">${escapeHtml(customer.email)}</td>
                 <td class="oib-cell">${escapeHtml(customer.oib)}</td>
+                <td class="ba-cell">${escapeHtml(customer.billing_account)}</td>
                 <td class="sim-count-cell">${customer.sim_count}</td>
                 <td class="date-cell">${escapeHtml(customer.created_at)}</td>
             </tr>

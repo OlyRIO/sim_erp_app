@@ -18,5 +18,5 @@ CMD if [ "$FLASK_ENV" = "development" ]; then \
       flask run --host=0.0.0.0 --port=${PORT:-8000}; \
     else \
       alembic upgrade head && \
-      gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 2 --threads 4 --timeout 60 wsgi:app; \
+      gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 60 wsgi:app; \
     fi

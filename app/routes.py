@@ -139,6 +139,7 @@ def get_customers():
         'name': customer.name,
         'email': customer.email or 'N/A',
         'oib': customer.oib or 'N/A',
+        'billing_account': customer.billing_accounts[0].account_number if customer.billing_accounts else 'N/A',
         'sim_count': len(customer.assignments),
         'created_at': customer.created_at.strftime('%Y-%m-%d %H:%M')
     } for customer in pagination.items]

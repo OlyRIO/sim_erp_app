@@ -29,12 +29,17 @@ def create_app() -> Flask:
     if seed_flag:
         try:
             from .seed import seed_bulk
+            from .models import Customer
 
             with app.app_context():
-                print("Starting database seeding...")
-                # Use seed_bulk with reset to ensure clean data
-                c, s, a = seed_bulk(num_customers=50, num_sims=50, num_assignments=50, reset=True)
-                print(f"Database seeding completed: {c} customers, {s} SIMs, {a} assignments")
+                # Only seed if no customers exist to avoid multiple workers seeding
+                if db.session.query(Customer).count() == 0:
+                    print("Starting database seeding...")
+                    # Use seed_bulk with reset to ensure clean data
+                    c, s, a = seed_bulk(num_customers=50, num_sims=50, num_assignments=50, reset=True)
+                    print(f"Database seeding completed: {c} customers, {s} SIMs, {a} assignments")
+                else:
+                    print("Database already seeded, skipping...")
         except Exception as e:
             # Ignore seeding failures during startup (e.g., before migrations)
             print(f"Seeding failed: {e}")
