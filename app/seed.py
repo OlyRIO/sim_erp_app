@@ -316,7 +316,7 @@ def ensure_seed_data() -> None:
         return
 
 
-def seed_bulk(num_customers: int = 1000, num_sims: int = 1000, num_assignments: int = 1000, reset: bool = False) -> Tuple[int, int, int]:
+def seed_bulk(num_customers: int = 50, num_sims: int = 50, num_assignments: int = 50, reset: bool = False) -> Tuple[int, int, int]:
     """Bulk-seed database with specified counts.
 
     - Ensures unique ICCID/MSISDN generation.
@@ -327,13 +327,19 @@ def seed_bulk(num_customers: int = 1000, num_sims: int = 1000, num_assignments: 
     try:
         if reset:
             # Delete in correct order to respect foreign key constraints
-            db.session.query(InvoiceItem).delete()
-            db.session.query(Bill).delete()
-            db.session.query(BillingAccount).delete()
-            db.session.query(Assignment).delete()
-            db.session.query(Sim).delete()
-            db.session.query(Customer).delete()
+            print("Clearing existing data...")
+            db.session.execute(db.text("DELETE FROM invoice_item"))
+            db.session.execute(db.text("DELETE FROM bill"))
+            db.session.execute(db.text("DELETE FROM billing_account"))
+            db.session.execute(db.text("DELETE FROM assignment"))
+            db.session.execute(db.text("DELETE FROM sim"))
+            db.session.execute(db.text("DELETE FROM customer"))
             db.session.commit()
+            print("Existing data cleared.")
+        
+        # Ensure SIM types and plans exist
+        _ensure_sim_types()
+        _ensure_plans()
 
         existing_customers = db.session.query(Customer).count()
         existing_sims = db.session.query(Sim).count()
@@ -341,8 +347,9 @@ def seed_bulk(num_customers: int = 1000, num_sims: int = 1000, num_assignments: 
         target_customers = max(0, num_customers - existing_customers)
         target_sims = max(0, num_sims - existing_sims)
 
-        # Generate customers
-        batch_size = 500
+        # Generate customers in batches
+        batch_size = 100
+        print(f"Creating {target_customers} customers...")
         while target_customers > 0:
             make = min(batch_size, target_customers)
             new_customers = _make_customers(make)
@@ -350,10 +357,12 @@ def seed_bulk(num_customers: int = 1000, num_sims: int = 1000, num_assignments: 
             db.session.commit()
             inserted_c += len(new_customers)
             target_customers -= len(new_customers)
+            print(f"  Created {inserted_c} customers so far...")
 
         # Generate sims with strong uniqueness safeguards
-        iccids = set(db.session.query(Sim.iccid).distinct())
-        msisdns = set(db.session.query(Sim.msisdn).filter(Sim.msisdn.isnot(None)).distinct()) if hasattr(Sim, "msisdn") else set()
+        print(f"Creating {target_sims} SIMs...")
+        iccids = set(row[0] for row in db.session.query(Sim.iccid).distinct())
+        msisdns = set(row[0] for row in db.session.query(Sim.msisdn).filter(Sim.msisdn.isnot(None)).distinct()) if hasattr(Sim, "msisdn") else set()
 
         def _unique_sim_batch(k: int) -> List[Sim]:
             out: List[Sim] = []
@@ -389,6 +398,7 @@ def seed_bulk(num_customers: int = 1000, num_sims: int = 1000, num_assignments: 
             db.session.commit()
             inserted_s += len(new_sims)
             target_sims -= len(new_sims)
+            print(f"  Created {inserted_s} SIMs so far...")
 
         # Assignments: avoid duplicates per uq_customer_sim
         # We'll create up to num_assignments unique pairs

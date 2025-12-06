@@ -25,15 +25,16 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
 
     # Optionally seed data on startup if DB is empty
-    seed_flag = os.getenv("SEED_ON_START", "true").lower() in {"1", "true", "yes", "on", "y"}
+    seed_flag = os.getenv("SEED_ON_START")
     if seed_flag:
         try:
-            from .seed import ensure_seed_data
+            from .seed import seed_bulk
 
             with app.app_context():
                 print("Starting database seeding...")
-                ensure_seed_data()
-                print("Database seeding completed")
+                # Use seed_bulk with reset to ensure clean data
+                c, s, a = seed_bulk(num_customers=50, num_sims=50, num_assignments=50, reset=True)
+                print(f"Database seeding completed: {c} customers, {s} SIMs, {a} assignments")
         except Exception as e:
             # Ignore seeding failures during startup (e.g., before migrations)
             print(f"Seeding failed: {e}")
