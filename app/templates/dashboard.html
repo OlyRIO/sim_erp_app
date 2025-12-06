@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>Welcome to the dashboard shell. Charts and KPIs will live here later.</p>
+<div class="dashboard-grid">
+  <div class="chart-container">
+    <h2>SIM Status Distribution</h2>
+    <div id="sim-status-chart"></div>
+    <div id="chart-legend"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/sim-status-chart.js') }}"></script>
 {% endblock %}

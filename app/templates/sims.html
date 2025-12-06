@@ -1,5 +1,51 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>Inventory table placeholder for SIM cards.</p>
+<div class="inventory-header">
+  <div class="inventory-stats">
+    <div class="stat-card">
+      <span class="stat-label">Total SIMs</span>
+      <span class="stat-value" id="total-sims">-</span>
+    </div>
+  </div>
+  
+  <div class="filter-controls">
+    <input type="text" id="filter-iccid" placeholder="Filter by ICCID..." class="filter-input">
+    <input type="text" id="filter-msisdn" placeholder="Filter by MSISDN..." class="filter-input">
+    <select id="filter-status" class="filter-select">
+      <option value="">All Statuses</option>
+      <option value="active">Active</option>
+      <option value="inactive">Inactive</option>
+      <option value="suspended">Suspended</option>
+      <option value="available">Available</option>
+      <option value="provisioning">Provisioning</option>
+    </select>
+    <button id="clear-filters" class="btn-secondary">Clear Filters</button>
+  </div>
+</div>
+
+<div class="table-container">
+  <table class="sim-table">
+    <thead>
+      <tr>
+        <th>ICCID</th>
+        <th>MSISDN</th>
+        <th>Status</th>
+        <th>Carrier</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody id="sim-table-body">
+      <tr class="loading-row">
+        <td colspan="5" class="loading-cell">Loading SIM cards...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pagination-controls" id="pagination-controls">
+  <!-- Pagination will be dynamically inserted here -->
+</div>
+
+<script src="{{ url_for('static', filename='js/sim-inventory.js') }}"></script>
 {% endblock %}
