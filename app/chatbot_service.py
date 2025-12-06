@@ -7,11 +7,11 @@ from .models import Customer, Sim, Assignment, SimType, BillingAccount, Bill, In
 
 
 OPTIONS = {
-    1: "📱 Tell me which type of SIM cards I can get in your company",
-    2: "✏️ I want to change my personal information",
-    3: "👤 Retrieve User Information",
-    4: "📄 Give me my open bills",
-    5: "📋 Give me my last open bill"
+    1: "Tell me which type of SIM cards I can get in your company",
+    2: "I want to change my personal information",
+    3: "Retrieve User Information",
+    4: "Give me my open bills",
+    5: "Give me my last open bill"
 }
 
 
@@ -65,15 +65,15 @@ def get_sim_types() -> Dict[str, Any]:
         
         if not sim_types:
             return {
-                'message': '❌ No SIM types available at the moment.',
+                'message': 'No SIM types available at the moment.',
                 'state': 'initial',
                 'reset': True
             }
         
         response = "**Available SIM Card Types:**\n\n"
         for sim_type in sim_types:
-            price_str = f"€{float(sim_type.price):.2f}" if sim_type.price > 0 else "FREE"
-            response += f"📱 **{sim_type.name}**\n"
+            price_str = f"EUR {float(sim_type.price):.2f}" if sim_type.price > 0 else "FREE"
+            response += f"**{sim_type.name}**\n"
             if sim_type.description:
                 response += f"   {sim_type.description}\n"
             response += f"   Price: {price_str}\n\n"
@@ -91,7 +91,7 @@ def get_sim_types() -> Dict[str, Any]:
         }
     except Exception as e:
         return {
-            'message': f'❌ Error fetching SIM types: {str(e)}',
+            'message': f'Error fetching SIM types: {str(e)}',
             'state': 'initial',
             'reset': True
         }
@@ -114,7 +114,7 @@ def verify_oib_and_prompt_field(oib: str) -> Dict[str, Any]:
     # Validate OIB format (11 digits)
     if not oib.isdigit() or len(oib) != 11:
         return {
-            'message': '❌ Invalid OIB format. Please provide an 11-digit OIB number, or send 0 to return to the main menu.',
+            'message': 'Invalid OIB format. Please provide an 11-digit OIB number, or send 0 to return to the main menu.',
             'state': 'awaiting_oib_for_update'
         }
     
@@ -122,7 +122,7 @@ def verify_oib_and_prompt_field(oib: str) -> Dict[str, Any]:
         customer = db.session.query(Customer).filter(Customer.oib == oib).first()
         
         if not customer:
-            response = f"""❌ No customer found with OIB: {oib}
+            response = f"""No customer found with OIB: {oib}
 
 ---
 
@@ -137,7 +137,7 @@ def verify_oib_and_prompt_field(oib: str) -> Dict[str, Any]:
             }
         
         return {
-            'message': f"""✅ **Customer Found**
+            'message': f"""**Customer Found**
 
 **Name:** {customer.name}
 **Email:** {customer.email or 'N/A'}
@@ -151,7 +151,7 @@ Reply with 1 or 2, or send 0 to return to the main menu:""",
             'context': {'customer_id': customer.id, 'oib': oib}
         }
     except Exception as e:
-        response = f"""❌ Database error: {str(e)}
+        response = f"""Database error: {str(e)}
 
 ---
 
@@ -184,7 +184,7 @@ def handle_field_selection(message: str, context: Dict[str, Any]) -> Dict[str, A
         }
     else:
         return {
-            'message': '❌ Invalid choice. Please reply with 1 (Name) or 2 (Email), or send 0 to return to the main menu:',
+            'message': 'Invalid choice. Please reply with 1 (Name) or 2 (Email), or send 0 to return to the main menu:',
             'state': 'awaiting_field_selection',
             'context': context
         }
@@ -196,7 +196,7 @@ def update_customer_name(customer_id: int, new_name: str) -> Dict[str, Any]:
         customer = db.session.get(Customer, customer_id)
         
         if not customer:
-            response = """❌ Customer not found.
+            response = """Customer not found.
 
 ---
 
@@ -214,7 +214,7 @@ def update_customer_name(customer_id: int, new_name: str) -> Dict[str, Any]:
         customer.name = new_name.strip()
         db.session.commit()
         
-        response = f"""✅ **Name Updated Successfully!**
+        response = f"""**Name Updated Successfully!**
 
 **Old Name:** {old_name}
 **New Name:** {customer.name}
@@ -233,7 +233,7 @@ def update_customer_name(customer_id: int, new_name: str) -> Dict[str, Any]:
         }
     except Exception as e:
         db.session.rollback()
-        response = f"""❌ Database error: {str(e)}
+        response = f"""Database error: {str(e)}
 
 ---
 
@@ -254,7 +254,7 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         customer = db.session.get(Customer, customer_id)
         
         if not customer:
-            response = """❌ Customer not found.
+            response = """Customer not found.
 
 ---
 
@@ -275,7 +275,7 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         ).first()
         
         if existing:
-            response = f"""❌ Email {new_email} is already in use by another customer.
+            response = f"""Email {new_email} is already in use by another customer.
 
 ---
 
@@ -293,7 +293,7 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         customer.email = new_email.strip()
         db.session.commit()
         
-        response = f"""✅ **Email Updated Successfully!**
+        response = f"""**Email Updated Successfully!**
 
 **Old Email:** {old_email or 'N/A'}
 **New Email:** {customer.email}
@@ -312,7 +312,7 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
         }
     except Exception as e:
         db.session.rollback()
-        response = f"""❌ Database error: {str(e)}
+        response = f"""Database error: {str(e)}
 
 ---
 
@@ -328,13 +328,11 @@ def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
 
 
 def handle_fetch_request() -> Dict[str, Any]:
-    """Handle option 3 - request identifier for user info fetch."""
+    """Handle option 3 - request OIB for user info fetch."""
     return {
         'message': """**Retrieve User Information**
 
-Please provide either:
-• Customer ID (e.g., `123`)
-• Email address (e.g., `user@example.com`)
+Please provide your **OIB (11 digits)**.
 
 Or send 0 to return to the main menu.""",
         'state': 'awaiting_identifier'
@@ -342,22 +340,34 @@ Or send 0 to return to the main menu.""",
 
 
 def fetch_user_info(message: str) -> Dict[str, Any]:
-    """Fetch and display user information."""
+    """Fetch and display user information by OIB only."""
     identifier = message.strip()
-    
-    # Try to find customer by ID or email
-    customer = None
-    
-    # Try ID first
-    try:
-        customer_id = int(identifier)
-        customer = db.session.get(Customer, customer_id)
-    except ValueError:
-        # Not a number, try email
-        customer = db.session.query(Customer).filter(Customer.email == identifier).first()
-    
+
+    if identifier == '0':
+        response = """Returning to the main menu.
+
+**What can I help you with?**\n\n"""
+        for num, desc in OPTIONS.items():
+            response += f"{num}. {desc}\n"
+        response += "\nReply with a number (1-5) to select an option."
+        return {
+            'message': response,
+            'state': 'awaiting_option',
+            'reset': True
+        }
+
+    # Validate OIB format
+    is_valid, error = validate_oib(identifier)
+    if not is_valid:
+        return {
+            'message': f"{error} Please provide a valid 11-digit OIB, or send 0 to return to the main menu.",
+            'state': 'awaiting_identifier'
+        }
+
+    customer = db.session.query(Customer).filter(Customer.oib == identifier).first()
+
     if not customer:
-        response = f"""❌ No customer found with identifier: {identifier}
+        response = f"""No customer found with OIB: {identifier}
 
 ---
 
@@ -377,11 +387,12 @@ def fetch_user_info(message: str) -> Dict[str, Any]:
     ).filter(Assignment.customer_id == customer.id).all()
     
     # Build response
-    response = f"""✅ **Customer Information**
+    response = f"""**Customer Information**
 
 **ID:** {customer.id}
 **Name:** {customer.name}
 **Email:** {customer.email or 'N/A'}
+**OIB:** {customer.oib}
 **Created:** {customer.created_at.strftime('%Y-%m-%d %H:%M')}
 
 **Assigned SIM Cards:** {len(assignments)}
@@ -439,14 +450,14 @@ def validate_ba_number(ba_number: str) -> tuple[bool, Optional[str]]:
     
     # Check if it's exactly 10 digits
     if not ba_number.isdigit():
-        return False, "❌ Billing Account number must contain only digits."
+        return False, "Billing Account number must contain only digits."
     
     if len(ba_number) != 10:
-        return False, f"❌ Billing Account number must be exactly 10 digits. You provided {len(ba_number)}."
+        return False, f"Billing Account number must be exactly 10 digits. You provided {len(ba_number)}."
     
     # Check if it starts with 900
     if not ba_number.startswith('900'):
-        return False, "❌ Billing Account number must start with 900."
+        return False, "Billing Account number must start with 900."
     
     return True, None
 
@@ -461,10 +472,10 @@ def validate_oib(oib: str) -> tuple[bool, Optional[str]]:
     
     # Check if it's exactly 11 digits
     if not oib.isdigit():
-        return False, "❌ OIB must contain only digits."
+        return False, "OIB must contain only digits."
     
     if len(oib) != 11:
-        return False, f"❌ OIB must be exactly 11 digits. You provided {len(oib)}."
+        return False, f"OIB must be exactly 11 digits. You provided {len(oib)}."
     
     # Validate check digit using ISO 7064, MOD 11-10 algorithm
     a = 10
@@ -477,7 +488,7 @@ def validate_oib(oib: str) -> tuple[bool, Optional[str]]:
     
     check_digit = (11 - a) % 10
     if check_digit != int(oib[10]):
-        return False, "❌ Invalid OIB check digit. Please verify the number."
+        return False, "Invalid OIB check digit. Please verify the number."
     
     return True, None
 
@@ -529,11 +540,11 @@ def fetch_open_bills(ba_number: str) -> Dict[str, Any]:
     ).first()
     
     if not billing_account:
-        response = f"""❌ No billing account found with number: {ba_number}
+        response = f"""No billing account found with number: {ba_number}
 
----
+    ---
 
-**What can I help you with?**\n\n"""
+    **What can I help you with?**\n\n"""
         for num, desc in OPTIONS.items():
             response += f"{num}. {desc}\n"
         response += "\nReply with a number (1-5) to select an option."
@@ -550,7 +561,7 @@ def fetch_open_bills(ba_number: str) -> Dict[str, Any]:
     ).order_by(Bill.bill_month.desc()).all()
     
     if not open_bills:
-        response = f"""✅ **No Open Bills**
+        response = f"""**No Open Bills**
 
 **Billing Account:** {ba_number}
 **Customer:** {billing_account.customer.name}
@@ -570,7 +581,7 @@ You have no open bills at this time.
         }
     
     # Build response
-    response = f"""✅ **Open Bills**
+    response = f"""**Open Bills**
 
 **Billing Account:** {ba_number}
 **Customer:** {billing_account.customer.name}
@@ -579,9 +590,9 @@ You have no open bills at this time.
 """
     
     for bill in open_bills:
-        status_emoji = "⚠️" if bill.status == 'overdue' else "⏳"
-        response += f"\n{status_emoji} **{bill.bill_month}**"
-        response += f"\n   Amount: €{float(bill.total_amount):.2f}"
+        status_label = "OVERDUE" if bill.status == 'overdue' else "PENDING"
+        response += f"\n[{status_label}] **{bill.bill_month}**"
+        response += f"\n   Amount: EUR {float(bill.total_amount):.2f}"
         response += f"\n   Status: {bill.status.capitalize()}"
         if bill.due_date:
             response += f"\n   Due: {bill.due_date.strftime('%Y-%m-%d')}"
@@ -618,7 +629,7 @@ def fetch_last_open_bill(ba_number: str) -> Dict[str, Any]:
     ).first()
     
     if not billing_account:
-        response = f"""❌ No billing account found with number: {ba_number}
+        response = f"""No billing account found with number: {ba_number}
 
 ---
 
@@ -639,7 +650,7 @@ def fetch_last_open_bill(ba_number: str) -> Dict[str, Any]:
     ).order_by(Bill.bill_month.desc()).first()
     
     if not last_bill:
-        response = f"""✅ **No Open Bills**
+        response = f"""**No Open Bills**
 
 **Billing Account:** {ba_number}
 **Customer:** {billing_account.customer.name}
@@ -664,15 +675,15 @@ You have no open bills at this time.
     ).all()
     
     # Build response
-    status_emoji = "⚠️" if last_bill.status == 'overdue' else "⏳"
-    response = f"""✅ **Latest Open Bill**
+    status_label = "OVERDUE" if last_bill.status == 'overdue' else "PENDING"
+    response = f"""**Latest Open Bill**
 
 **Billing Account:** {ba_number}
 **Customer:** {billing_account.customer.name}
 
-{status_emoji} **Bill for {last_bill.bill_month}**
+[ {status_label} ] **Bill for {last_bill.bill_month}**
 **Status:** {last_bill.status.capitalize()}
-**Total Amount:** €{float(last_bill.total_amount):.2f}
+**Total Amount:** EUR {float(last_bill.total_amount):.2f}
 """
     
     if last_bill.due_date:
@@ -682,12 +693,12 @@ You have no open bills at this time.
         response += "\n**Invoice Items:**\n"
         for item in items:
             if item.item_type == 'plan' and item.plan:
-                response += f"\n📋 {item.plan.name}"
+                response += f"\n- Plan: {item.plan.name}"
             elif item.item_type == 'extra_cost':
-                response += f"\n💸 {item.extra_cost_type}"
+                response += f"\n- Extra cost: {item.extra_cost_type}"
                 if item.description:
                     response += f" - {item.description}"
-            response += f"\n   Amount: €{float(item.amount):.2f}\n"
+            response += f"\n   Amount: EUR {float(item.amount):.2f}\n"
     
     # Append main menu
     response += "\n---\n\n**What can I help you with?**\n\n"
@@ -726,7 +737,7 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         
         if option is None:
             return {
-                'message': '❌ Invalid option. Please enter a valid number (1-5), or send 0 to return to the main menu.',
+                'message': 'Invalid option. Please enter a valid number (1-5), or send 0 to return to the main menu.',
                 'state': 'awaiting_option'
             }
         
@@ -769,7 +780,7 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         # Fallback for unexpected option values
         else:
             return {
-                'message': '❌ Invalid option. Please enter a valid number (1-5).',
+                'message': 'Invalid option. Please enter a valid number (1-5).',
                 'state': 'awaiting_option'
             }
     

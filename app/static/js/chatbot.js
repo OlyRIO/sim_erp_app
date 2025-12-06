@@ -85,7 +85,7 @@
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/```([\s\S]+?)```/g, '<code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin: 4px 0;">$1</code>')
             .replace(/`(.+?)`/g, '<code style="background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 3px;">$1</code>')
-            .replace(/• /g, '&nbsp;&nbsp;• ');
+            .replace(/- /g, '&nbsp;&nbsp;- ');
         
         contentDiv.innerHTML = formattedContent;
         messageDiv.appendChild(contentDiv);
@@ -176,12 +176,12 @@
             if (response.ok) {
                 addMessage(data.message, false);
             } else {
-                addMessage('❌ Error: ' + (data.message || 'Failed to send message'), false);
+                addMessage('Error: ' + (data.message || 'Failed to send message'), false);
             }
             
         } catch (error) {
             hideTypingIndicator();
-            addMessage('❌ Connection error. Please check your internet connection.', false);
+            addMessage('Connection error. Please check your internet connection.', false);
             console.error('Chatbot error:', error);
         } finally {
             // Re-enable send button

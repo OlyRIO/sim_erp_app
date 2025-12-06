@@ -8,8 +8,7 @@ from typing import List, Tuple
 from faker import Faker
 
 from .extensions import db
-from .models import Assignment, Customer, Sim, SimType, Plan, BillingAccount, Bill, InvoiceItem
-from datetime import timedelta
+from .models import Assignment, Customer, Sim, SimType, Plan, BillingAccount
 
 
 faker = Faker("hr_HR")
@@ -199,121 +198,6 @@ def _ensure_plans() -> None:
         db.session.commit()
     except Exception:
         db.session.rollback()
-
-
-def _ensure_sample_billing_data() -> None:
-    """Create sample billing data for testing."""
-    try:
-        # Check if billing accounts already exist
-        if db.session.query(BillingAccount).first():
-            return
-        
-        # Get first customer
-        customer = db.session.query(Customer).first()
-        if not customer:
-            return
-        
-        # Create a billing account
-        ba = BillingAccount(
-            account_number="9001242277",
-            customer_id=customer.id,
-            status="active"
-        )
-        db.session.add(ba)
-        db.session.flush()
-        
-        # Get plans
-        plans = db.session.query(Plan).all()
-        if not plans:
-            return
-        
-        # Create bills for last 3 months
-        from datetime import datetime, timedelta
-        
-        for i in range(3):
-            bill_date = datetime.utcnow() - timedelta(days=30 * i)
-            bill_month = bill_date.strftime('%Y-%m')
-            
-            # Create bill
-            bill = Bill(
-                billing_account_id=ba.id,
-                bill_month=bill_month,
-                total_amount=0,  # Will update after adding items
-                status='pending' if i < 2 else 'paid',
-                issue_date=bill_date,
-                due_date=bill_date + timedelta(days=15)
-            )
-            db.session.add(bill)
-            db.session.flush()
-            
-            # Add plan item
-            plan = random.choice(plans)
-            plan_item = InvoiceItem(
-                bill_id=bill.id,
-                item_type='plan',
-                plan_id=plan.id,
-                amount=plan.monthly_price
-            )
-            db.session.add(plan_item)
-            
-            # Add some extra costs (randomly)
-            total = float(plan.monthly_price)
-            if random.random() > 0.5:
-                extra_types = ['SMS Parking', '3rd Party Expense', 'Miscellaneous']
-                extra_type = random.choice(extra_types)
-                extra_amount = round(random.uniform(2, 15), 2)
-                
-                extra_item = InvoiceItem(
-                    bill_id=bill.id,
-                    item_type='extra_cost',
-                    extra_cost_type=extra_type,
-                    description=f"Additional charges for {extra_type.lower()}",
-                    amount=extra_amount
-                )
-                db.session.add(extra_item)
-                total += extra_amount
-            
-            # Update bill total
-            bill.total_amount = total
-        
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-
-
-def ensure_seed_data() -> None:
-    """Populate the database with dummy data if empty.
-
-    Idempotent: if any customer exists, seeding is skipped.
-    Safe: if tables are missing (migrations not applied), it will no-op.
-    """
-    try:
-        # Always ensure SIM types and plans are present
-        _ensure_sim_types()
-        _ensure_plans()
-        
-        if db.session.query(Customer).first():
-            # If customers exist, just ensure billing data
-            _ensure_sample_billing_data()
-            return
-
-        # Create small initial dataset for startup (50 each)
-        # Use CLI command for bulk seeding: flask seed --customers 1000 --sims 1000
-        customers = _make_customers(50)
-        sims = _make_sims(50)
-        assignments = _make_assignments(customers, sims)
-
-        db.session.add_all(customers)
-        db.session.add_all(sims)
-        db.session.add_all(assignments)
-        db.session.commit()
-        
-        # Create sample billing data
-        _ensure_sample_billing_data()
-    except Exception as e:
-        db.session.rollback()
-        print(f"Seeding error: {e}")
-        return
 
 
 def seed_bulk(num_customers: int = 50, num_sims: int = 50, num_assignments: int = 50, reset: bool = False) -> Tuple[int, int, int]:

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page_title }} · ISP SIM ERP</title>
+    <title>{{ page_title }} - ISP SIM ERP</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <script src="https://d3js.org/d3.v7.min.js"></script>
   </head>
@@ -13,7 +13,7 @@
       <nav>
         <a href="{{ url_for('core.dashboard') }}">Dashboard</a>
         <a href="{{ url_for('core.sim_inventory') }}">SIM Inventory</a>
-        <a href="{{ url_for('core.assignments') }}">Assignments</a>
+        <a href="{{ url_for('core.assignments') }}">SIM &amp; Customer Updates</a>
         <a href="{{ url_for('core.customers') }}">Customers</a>
       </nav>
     </header>
@@ -52,7 +52,7 @@
         <div id="chatbot-messages" class="chatbot-messages">
           <div class="chatbot-message bot-message">
             <div class="message-content">
-              <strong>👋 Welcome to SIM ERP Assistant!</strong><br>
+              <strong>Welcome to SIM ERP Assistant!</strong><br>
               Type anything to get started.
             </div>
           </div>

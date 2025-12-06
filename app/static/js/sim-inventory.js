@@ -83,15 +83,15 @@
 
         tableBody.innerHTML = sims.map(sim => `
             <tr class="sim-row">
-                <td class="iccid-cell">${escapeHtml(sim.iccid)}</td>
-                <td class="msisdn-cell">${escapeHtml(sim.msisdn)}</td>
-                <td class="status-cell">
+                <td class="iccid-cell" data-label="ICCID">${escapeHtml(sim.iccid)}</td>
+                <td class="msisdn-cell" data-label="MSISDN">${escapeHtml(sim.msisdn)}</td>
+                <td class="status-cell" data-label="Status">
                     <span class="status-badge" style="background-color: ${statusColors[sim.status] || statusColors.unknown}">
                         ${escapeHtml(sim.status)}
                     </span>
                 </td>
-                <td class="carrier-cell">${escapeHtml(sim.carrier)}</td>
-                <td class="date-cell">${escapeHtml(sim.created_at)}</td>
+                <td class="carrier-cell" data-label="Carrier">${escapeHtml(sim.carrier)}</td>
+                <td class="date-cell" data-label="Created At">${escapeHtml(sim.created_at)}</td>
             </tr>
         `).join('');
     }
@@ -117,7 +117,7 @@
         html += `
             <button class="pagination-btn" ${!data.has_prev ? 'disabled' : ''} 
                     onclick="window.simInventory.goToPage(${data.current_page - 1})">
-                ‹ Previous
+                < Previous
             </button>
         `;
 
@@ -147,7 +147,7 @@
         html += `
             <button class="pagination-btn" ${!data.has_next ? 'disabled' : ''} 
                     onclick="window.simInventory.goToPage(${data.current_page + 1})">
-                Next ›
+                Next >
             </button>
         `;
 

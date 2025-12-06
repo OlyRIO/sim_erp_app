@@ -23,4 +23,4 @@ class Bill(db.Model):
     invoice_items = db.relationship("InvoiceItem", back_populates="bill", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"<Bill id={self.id} BA={self.billing_account_id} month={self.bill_month} total={self.total_amount}€>"
+        return f"<Bill id={self.id} BA={self.billing_account_id} month={self.bill_month} total={self.total_amount} EUR>"

@@ -73,12 +73,12 @@
 
         tableBody.innerHTML = customers.map(customer => `
             <tr class="sim-row">
-                <td class="name-cell"><strong>${escapeHtml(customer.name)}</strong></td>
-                <td class="email-cell">${escapeHtml(customer.email)}</td>
-                <td class="oib-cell">${escapeHtml(customer.oib)}</td>
-                <td class="ba-cell">${escapeHtml(customer.billing_account)}</td>
-                <td class="sim-count-cell">${customer.sim_count}</td>
-                <td class="date-cell">${escapeHtml(customer.created_at)}</td>
+                <td class="name-cell" data-label="Name"><strong>${escapeHtml(customer.name)}</strong></td>
+                <td class="email-cell" data-label="Email">${escapeHtml(customer.email)}</td>
+                <td class="oib-cell" data-label="OIB">${escapeHtml(customer.oib)}</td>
+                <td class="ba-cell" data-label="Billing Account">${escapeHtml(customer.billing_account)}</td>
+                <td class="sim-count-cell" data-label="SIM Count">${customer.sim_count}</td>
+                <td class="date-cell" data-label="Created At">${escapeHtml(customer.created_at)}</td>
             </tr>
         `).join('');
     }
@@ -104,7 +104,7 @@
         html += `
             <button class="pagination-btn" ${!data.has_prev ? 'disabled' : ''} 
                     onclick="window.customerInventory.goToPage(${data.current_page - 1})">
-                ‹ Previous
+                < Previous
             </button>
         `;
 
@@ -134,7 +134,7 @@
         html += `
             <button class="pagination-btn" ${!data.has_next ? 'disabled' : ''} 
                     onclick="window.customerInventory.goToPage(${data.current_page + 1})">
-                Next ›
+                Next >
             </button>
         `;
 

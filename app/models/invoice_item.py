@@ -28,4 +28,4 @@ class InvoiceItem(db.Model):
     plan = db.relationship("Plan", back_populates="invoice_items")
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"<InvoiceItem id={self.id} bill_id={self.bill_id} type={self.item_type} amount={self.amount}€>"
+        return f"<InvoiceItem id={self.id} bill_id={self.bill_id} type={self.item_type} amount={self.amount} EUR>"

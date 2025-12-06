@@ -18,7 +18,7 @@ def sim_inventory():
 
 @core_bp.route("/assignments")
 def assignments():
-    return render_template("assignments.html", page_title="Assignments Board")
+    return render_template("assignments.html", page_title="SIM & Customer Updates")
 
 
 @core_bp.route("/customers")

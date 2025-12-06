@@ -19,4 +19,4 @@ class SimType(db.Model):
     sims = db.relationship("Sim", back_populates="sim_type")
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"<SimType id={self.id} name={self.name!r} price={self.price}€>"
+        return f"<SimType id={self.id} name={self.name!r} price={self.price} EUR>"
