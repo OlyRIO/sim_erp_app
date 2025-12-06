@@ -297,19 +297,33 @@ def ensure_seed_data() -> None:
             _ensure_sample_billing_data()
             return
 
-        customers = _make_customers(5)
-        sims = _make_sims(10)
-        assignments = _make_assignments(customers, sims)
-
-        db.session.add_all(customers)
-        db.session.add_all(sims)
-        db.session.add_all(assignments)
-        db.session.commit()
+        # Create 1000 customers, 1000 SIMs, and 1000 assignments (1:1 mapping)
+        # Use batching to avoid memory/timeout issues
+        batch_size = 100
+        all_customers = []
+        all_sims = []
+        
+        for i in range(0, 1000, batch_size):
+            customers = _make_customers(batch_size)
+            sims = _make_sims(batch_size)
+            
+            db.session.add_all(customers)
+            db.session.add_all(sims)
+            db.session.flush()  # Get IDs without committing
+            
+            # Create assignments for this batch
+            assignments = _make_assignments(customers, sims)
+            db.session.add_all(assignments)
+            db.session.commit()
+            
+            all_customers.extend(customers)
+            all_sims.extend(sims)
         
         # Create sample billing data
         _ensure_sample_billing_data()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
+        print(f"Seeding error: {e}")
         return
 
 
@@ -323,6 +337,10 @@ def seed_bulk(num_customers: int = 1000, num_sims: int = 1000, num_assignments: 
     inserted_c = inserted_s = inserted_a = 0
     try:
         if reset:
+            # Delete in correct order to respect foreign key constraints
+            db.session.query(InvoiceItem).delete()
+            db.session.query(Bill).delete()
+            db.session.query(BillingAccount).delete()
             db.session.query(Assignment).delete()
             db.session.query(Sim).delete()
             db.session.query(Customer).delete()

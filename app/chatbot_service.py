@@ -8,28 +8,10 @@ from .models import Customer, Sim, Assignment, SimType, BillingAccount, Bill, In
 
 OPTIONS = {
     1: "📱 Tell me which type of SIM cards I can get in your company",
-    2: "🔍 Check Service Status",
-    3: "📚 Get Help & Documentation",
-    4: "✏️ Update Database Entry",
-    5: "👤 Retrieve User Information",
-    6: "📄 Give me my open bills",
-    7: "📋 Give me my last open bill"
-}
-
-CONSTANT_INFO = {
-    2: """**Service Status:**
-✅ All Systems Operational
-• Database: Online
-• API Services: Running
-• Response Time: <50ms
-• Uptime: 99.9%""",
-    
-    3: """**Help & Documentation:**
-📖 User Guide: Available in dashboard
-📧 Support Email: support@ispsim.com
-🔗 API Docs: /api/v1/docs
-💬 Live Chat: You're using it now!
-⏰ Support Hours: 24/7"""
+    2: "✏️ I want to change my personal information",
+    3: "👤 Retrieve User Information",
+    4: "📄 Give me my open bills",
+    5: "📋 Give me my last open bill"
 }
 
 
@@ -55,7 +37,7 @@ def present_options() -> Dict[str, Any]:
     options_text = "**What can I help you with?**\n\n"
     for num, desc in OPTIONS.items():
         options_text += f"{num}. {desc}\n"
-    options_text += "\nReply with a number (1-7) to select an option."
+    options_text += "\nReply with a number (1-5) to select an option."
     
     return {
         'message': options_text,
@@ -69,7 +51,7 @@ def parse_option(message: str) -> Optional[int]:
     message = message.strip()
     try:
         option = int(message)
-        if 1 <= option <= 7:
+        if option in OPTIONS:
             return option
     except ValueError:
         pass
@@ -109,117 +91,152 @@ def get_sim_types() -> Dict[str, Any]:
         }
 
 
-def handle_info_option(option: int) -> Dict[str, Any]:
-    """Handle options 2-3 that display constant information."""
-    return {
-        'message': CONSTANT_INFO[option],
-        'state': 'initial',
-        'reset': True
-    }
-
-
 def handle_update_request() -> Dict[str, Any]:
-    """Handle option 4 - request data for database update."""
+    """Handle option 4 - request OIB for personal information update."""
     return {
-        'message': """**Update Database Entry**
+        'message': """**Update Personal Information**
 
-Please provide the following information in this format:
-```
-ID: [customer_id]
-NAME: [new_name]
-EMAIL: [new_email]
-```
-
-Example:
-```
-ID: 5
-NAME: John Smith
-EMAIL: john.smith@example.com
-```""",
-        'state': 'awaiting_update_data'
+Please provide your OIB (11-digit identification number):""",
+        'state': 'awaiting_oib_for_update'
     }
 
 
-def parse_update_data(message: str) -> Optional[Dict[str, str]]:
-    """Parse update data from user message."""
-    data = {}
-    lines = message.strip().split('\n')
+def verify_oib_and_prompt_field(oib: str) -> Dict[str, Any]:
+    """Verify OIB and prompt for field to update."""
+    oib = oib.strip().replace('-', '').replace(' ', '')
     
-    for line in lines:
-        line = line.strip().replace('```', '')
-        if ':' in line:
-            key, value = line.split(':', 1)
-            key = key.strip().upper()
-            value = value.strip()
-            if key in ['ID', 'NAME', 'EMAIL']:
-                data[key] = value
-    
-    # Validate required fields
-    if 'ID' in data and ('NAME' in data or 'EMAIL' in data):
-        return data
-    return None
-
-
-def process_update(message: str) -> Dict[str, Any]:
-    """Process database update request."""
-    data = parse_update_data(message)
-    
-    if not data:
+    # Validate OIB format (11 digits)
+    if not oib.isdigit() or len(oib) != 11:
         return {
-            'message': '❌ Invalid format. Please provide ID and at least one field to update (NAME or EMAIL).',
-            'state': 'awaiting_update_data'
+            'message': '❌ Invalid OIB format. Please provide an 11-digit OIB number.',
+            'state': 'awaiting_oib_for_update'
         }
     
     try:
-        customer_id = int(data['ID'])
-        customer = db.session.get(Customer, customer_id)
+        customer = db.session.query(Customer).filter(Customer.oib == oib).first()
         
         if not customer:
             return {
-                'message': f'❌ Customer with ID {customer_id} not found.',
+                'message': f'❌ No customer found with OIB: {oib}',
                 'state': 'initial',
                 'reset': True
             }
         
-        # Update fields if provided
-        updated_fields = []
-        if 'NAME' in data:
-            customer.name = data['NAME']
-            updated_fields.append(f"Name → {data['NAME']}")
-        
-        if 'EMAIL' in data:
-            # Check for duplicate email
-            existing = db.session.query(Customer).filter(
-                Customer.email == data['EMAIL'],
-                Customer.id != customer_id
-            ).first()
-            
-            if existing:
-                return {
-                    'message': f'❌ Email {data["EMAIL"]} is already in use by another customer.',
-                    'state': 'initial',
-                    'reset': True
-                }
-            
-            customer.email = data['EMAIL']
-            updated_fields.append(f"Email → {data['EMAIL']}")
-        
-        db.session.commit()
-        
         return {
-            'message': f"""✅ **Customer Updated Successfully!**
+            'message': f"""✅ **Customer Found**
 
-**Customer ID:** {customer_id}
-**Updated Fields:**
-{chr(10).join('• ' + field for field in updated_fields)}""",
+**Name:** {customer.name}
+**Email:** {customer.email or 'N/A'}
+
+What would you like to update?
+1. Name
+2. Email
+
+Reply with 1 or 2:""",
+            'state': 'awaiting_field_selection',
+            'context': {'customer_id': customer.id, 'oib': oib}
+        }
+    except Exception as e:
+        return {
+            'message': f'❌ Database error: {str(e)}',
             'state': 'initial',
             'reset': True
         }
-        
-    except ValueError:
+
+
+def handle_field_selection(message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle field selection for update."""
+    choice = message.strip()
+    
+    if choice == '1':
         return {
-            'message': '❌ Invalid ID format. Please provide a numeric customer ID.',
-            'state': 'awaiting_update_data'
+            'message': 'Please enter your new **name**:',
+            'state': 'awaiting_name_update',
+            'context': context
+        }
+    elif choice == '2':
+        return {
+            'message': 'Please enter your new **email address**:',
+            'state': 'awaiting_email_update',
+            'context': context
+        }
+    else:
+        return {
+            'message': '❌ Invalid choice. Please reply with 1 (Name) or 2 (Email):',
+            'state': 'awaiting_field_selection',
+            'context': context
+        }
+
+
+def update_customer_name(customer_id: int, new_name: str) -> Dict[str, Any]:
+    """Update customer name."""
+    try:
+        customer = db.session.get(Customer, customer_id)
+        
+        if not customer:
+            return {
+                'message': '❌ Customer not found.',
+                'state': 'initial',
+                'reset': True
+            }
+        
+        old_name = customer.name
+        customer.name = new_name.strip()
+        db.session.commit()
+        
+        return {
+            'message': f"""✅ **Name Updated Successfully!**
+
+**Old Name:** {old_name}
+**New Name:** {customer.name}""",
+            'state': 'initial',
+            'reset': True
+        }
+    except Exception as e:
+        db.session.rollback()
+        return {
+            'message': f'❌ Database error: {str(e)}',
+            'state': 'initial',
+            'reset': True
+        }
+
+
+def update_customer_email(customer_id: int, new_email: str) -> Dict[str, Any]:
+    """Update customer email."""
+    try:
+        customer = db.session.get(Customer, customer_id)
+        
+        if not customer:
+            return {
+                'message': '❌ Customer not found.',
+                'state': 'initial',
+                'reset': True
+            }
+        
+        # Check for duplicate email
+        existing = db.session.query(Customer).filter(
+            Customer.email == new_email.strip(),
+            Customer.id != customer_id
+        ).first()
+        
+        if existing:
+            return {
+                'message': f'❌ Email {new_email} is already in use by another customer.',
+                'state': 'initial',
+                'reset': True
+            }
+        
+        old_email = customer.email
+        customer.email = new_email.strip()
+        db.session.commit()
+        
+        return {
+            'message': f"""✅ **Email Updated Successfully!**
+
+**Old Email:** {old_email or 'N/A'}
+**New Email:** {customer.email}""",
+            'state': 'initial',
+            'reset': True
         }
     except Exception as e:
         db.session.rollback()
@@ -569,7 +586,7 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
         
         if option is None:
             return {
-                'message': '❌ Invalid option. Please enter a number from 1 to 7.',
+                'message': '❌ Invalid option. Please enter a valid number (1-5).',
                 'state': 'awaiting_option'
             }
         
@@ -582,45 +599,90 @@ def handle_user_message(user_id: str, message: str) -> Dict[str, Any]:
                 clear_session()
             return response
         
-        elif option in [2, 3]:
-            response = handle_info_option(option)
-            if response.get('reset'):
-                clear_session()
-            return response
-        
-        elif option == 4:
+        elif option == 2:
             response = handle_update_request()
             sess['state'] = response['state']
             session.modified = True
             return response
         
-        elif option == 5:
+        elif option == 3:
             response = handle_fetch_request()
             sess['state'] = response['state']
             session.modified = True
             return response
         
-        elif option == 6:
+        elif option == 4:
             response = handle_open_bills_request()
             sess['state'] = response['state']
             session.modified = True
             return response
         
-        elif option == 7:
+        elif option == 5:
             response = handle_last_bill_request()
             sess['state'] = response['state']
             session.modified = True
             return response
+        
+        # Fallback for unexpected option values
+        else:
+            return {
+                'message': '❌ Invalid option. Please enter a valid number (1-5).',
+                'state': 'awaiting_option'
+            }
     
-    # Waiting for update data
-    elif state == 'awaiting_update_data':
-        response = process_update(message)
+    # Waiting for OIB for personal info update
+    elif state == 'awaiting_oib_for_update':
+        response = verify_oib_and_prompt_field(message)
         if response.get('reset'):
             clear_session()
         else:
             sess['state'] = response['state']
+            if 'context' in response:
+                sess['context'] = response['context']
             session.modified = True
         return response
+    
+    # Waiting for field selection (name or email)
+    elif state == 'awaiting_field_selection':
+        response = handle_field_selection(message, sess.get('context', {}))
+        if response.get('reset'):
+            clear_session()
+        else:
+            sess['state'] = response['state']
+            if 'context' in response:
+                sess['context'] = response['context']
+            session.modified = True
+        return response
+    
+    # Waiting for new name
+    elif state == 'awaiting_name_update':
+        customer_id = sess.get('context', {}).get('customer_id')
+        if customer_id:
+            response = update_customer_name(customer_id, message)
+            if response.get('reset'):
+                clear_session()
+            else:
+                sess['state'] = response['state']
+                session.modified = True
+            return response
+        else:
+            clear_session()
+            return present_options()
+    
+    # Waiting for new email
+    elif state == 'awaiting_email_update':
+        customer_id = sess.get('context', {}).get('customer_id')
+        if customer_id:
+            response = update_customer_email(customer_id, message)
+            if response.get('reset'):
+                clear_session()
+            else:
+                sess['state'] = response['state']
+                session.modified = True
+            return response
+        else:
+            clear_session()
+            return present_options()
     
     # Waiting for user identifier
     elif state == 'awaiting_identifier':

@@ -1,5 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>Customer directory placeholder.</p>
+<div class="inventory-header">
+  <div class="inventory-stats">
+    <div class="stat-card">
+      <span class="stat-label">Total Customers</span>
+      <span class="stat-value" id="total-customers">-</span>
+    </div>
+  </div>
+  
+  <div class="filter-controls">
+    <input type="text" id="filter-name" placeholder="Filter by Name..." class="filter-input">
+    <input type="text" id="filter-oib" placeholder="Filter by OIB..." class="filter-input">
+    <input type="text" id="filter-msisdn" placeholder="Filter by MSISDN..." class="filter-input">
+    <button id="clear-filters" class="btn-secondary">Clear Filters</button>
+  </div>
+</div>
+
+<div class="table-container">
+  <table class="sim-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>OIB</th>
+        <th>SIM Count</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody id="customer-table-body">
+      <tr class="loading-row">
+        <td colspan="5" class="loading-cell">Loading customers...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pagination-controls" id="pagination-controls">
+  <!-- Pagination will be dynamically inserted here -->
+</div>
+
+<script src="{{ url_for('static', filename='js/customer-inventory.js') }}"></script>
 {% endblock %}

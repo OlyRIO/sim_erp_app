@@ -1,5 +1,59 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>Assignments workflow placeholder.</p>
+<div class="edit-container">
+  <div class="edit-tabs">
+    <button class="edit-tab active" data-tab="sims">Edit SIMs</button>
+    <button class="edit-tab" data-tab="customers">Edit Customers</button>
+  </div>
+
+  <!-- SIM Edit Section -->
+  <div id="sims-edit" class="edit-section active">
+    <div class="edit-header">
+      <h2>Bulk Edit SIM Status</h2>
+      <p class="help-text">Search for SIMs and update their status</p>
+    </div>
+
+    <div class="search-section">
+      <input type="text" id="sim-search" placeholder="Search by ICCID or MSISDN..." class="search-input">
+      <button id="sim-search-btn" class="btn-primary">Search</button>
+    </div>
+
+    <div id="sim-results" class="results-section">
+      <p class="placeholder-text">Enter ICCID or MSISDN to search</p>
+    </div>
+  </div>
+
+  <!-- Customer Edit Section -->
+  <div id="customers-edit" class="edit-section">
+    <div class="edit-header">
+      <h2>Edit Customer Information</h2>
+      <p class="help-text">Search for customers and update their details</p>
+    </div>
+
+    <div class="search-section">
+      <input type="text" id="customer-search" placeholder="Search by Name or OIB..." class="search-input">
+      <button id="customer-search-btn" class="btn-primary">Search</button>
+    </div>
+
+    <div id="customer-results" class="results-section">
+      <p class="placeholder-text">Enter name or OIB to search</p>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="modal hidden">
+  <div class="modal-content">
+    <button class="modal-close" id="modal-close">&times;</button>
+    <h3 id="modal-title">Edit</h3>
+    <div id="modal-body"></div>
+    <div class="modal-footer">
+      <button id="modal-cancel" class="btn-secondary">Cancel</button>
+      <button id="modal-save" class="btn-primary">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/bulk-edit.js') }}"></script>
 {% endblock %}

@@ -31,9 +31,14 @@ def create_app() -> Flask:
             from .seed import ensure_seed_data
 
             with app.app_context():
+                print("Starting database seeding...")
                 ensure_seed_data()
-        except Exception:
+                print("Database seeding completed")
+        except Exception as e:
             # Ignore seeding failures during startup (e.g., before migrations)
+            print(f"Seeding failed: {e}")
+            import traceback
+            traceback.print_exc()
             pass
 
     @app.cli.command("seed")
