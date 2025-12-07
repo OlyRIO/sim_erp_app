@@ -1,7 +1,9 @@
+import random
+
 from flask import Blueprint, render_template, jsonify, request
 from sqlalchemy import func, or_
 from .extensions import db
-from .models import Sim
+from .models import Assignment, BillingAccount, Customer, Sim
 
 core_bp = Blueprint("core", __name__)
 
@@ -102,8 +104,6 @@ def get_sims():
 @core_bp.route("/api/customers")
 def get_customers():
     """API endpoint returning paginated and filtered Customer data."""
-    from .models import Customer, Assignment
-    
     # Get query parameters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
@@ -132,17 +132,51 @@ def get_customers():
     
     # Paginate
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    
+
+    # Collect customer IDs on this page
+    page_customers = pagination.items
+    customer_ids = [c.id for c in page_customers]
+
+    # Map existing billing accounts for these customers
+    ba_rows = db.session.query(BillingAccount.customer_id, BillingAccount.account_number).filter(
+        BillingAccount.customer_id.in_(customer_ids)
+    ).all()
+    ba_map = {cid: acct for cid, acct in ba_rows}
+
+    # Backfill missing billing accounts (helps already-deployed DBs without BAs)
+    missing_ids = [cid for cid in customer_ids if cid not in ba_map]
+    if missing_ids:
+        try:
+            existing_numbers = set(num for (num,) in db.session.query(BillingAccount.account_number).all())
+            new_accounts = []
+            for cid in missing_ids:
+                ba_number = f"900{random.randint(1000000, 9999999)}"
+                while ba_number in existing_numbers:
+                    ba_number = f"900{random.randint(1000000, 9999999)}"
+                existing_numbers.add(ba_number)
+                new_accounts.append(BillingAccount(
+                    account_number=ba_number,
+                    customer_id=cid,
+                    status="active"
+                ))
+            if new_accounts:
+                db.session.add_all(new_accounts)
+                db.session.commit()
+                for acct in new_accounts:
+                    ba_map[acct.customer_id] = acct.account_number
+        except Exception:
+            db.session.rollback()
+
     # Format results
     customers = [{
         'id': customer.id,
         'name': customer.name,
         'email': customer.email or 'N/A',
         'oib': customer.oib or 'N/A',
-        'billing_account': customer.billing_accounts[0].account_number if customer.billing_accounts else 'N/A',
+        'billing_account': ba_map.get(customer.id, 'N/A'),
         'sim_count': len(customer.assignments),
         'created_at': customer.created_at.strftime('%Y-%m-%d %H:%M')
-    } for customer in pagination.items]
+    } for customer in page_customers]
     
     return jsonify({
         'customers': customers,
